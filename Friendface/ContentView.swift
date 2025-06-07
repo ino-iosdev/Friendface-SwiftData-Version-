@@ -1,0 +1,60 @@
+//
+//  ContentView.swift
+//  Friendface
+//
+//  Created by Ino Yang Popper on 6/4/25.
+//
+
+import SwiftData
+import SwiftUI
+
+struct ContentView: View {
+    @Environment(\.modelContext) var modelContext
+    @Query(sort: \User.name) private var users: [User]
+    
+    var body: some View {
+        NavigationStack {
+            List(users) { user in
+                NavigationLink(value: user) {
+                    HStack {
+                        Circle()
+                            .fill(user.isActive ? .green : .red)
+                            .frame(width: 10)
+                        Text(user.name).font(.title3)
+                    }
+                }
+            }
+            .navigationTitle("Friendface")
+            .navigationDestination(for: User.self) { user in
+                UserView(user: user)
+            }
+            .task {
+                await fetchUsers()
+            }
+        }
+    }
+    
+    func fetchUsers() async {
+        guard users.isEmpty else { return }
+
+        do {
+            let url = URL(string: "https://www.hackingwithswift.com/samples/friendface.json")!
+            let (data, _) = try await URLSession.shared.data(from: url)
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            let downloadedUsers = try decoder.decode([User].self, from: data)
+            
+            for user in downloadedUsers {
+                modelContext.insert(user)
+            }
+        } catch {
+            print("Download failed")
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}

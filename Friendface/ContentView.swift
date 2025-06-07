@@ -45,10 +45,13 @@ struct ContentView: View {
             decoder.dateDecodingStrategy = .iso8601
             
             let downloadedUsers = try decoder.decode([User].self, from: data)
+            let insertContext = ModelContext(modelContext.container)
             
             for user in downloadedUsers {
-                modelContext.insert(user)
+                insertContext.insert(user)
             }
+            
+            try insertContext.save()
         } catch {
             print("Download failed")
         }
